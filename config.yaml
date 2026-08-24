@@ -1,0 +1,64 @@
+deepseek:
+  base_url: "https://api.deepseek.com"
+  model: "deepseek-chat"
+
+lark: {}
+
+rss:
+  feeds:
+    - url: "https://feeds.feedburner.com/TechCrunch/"
+      name: "TechCrunch"
+    - url: "https://www.theverge.com/rss/ai-artificial-intelligence/index.xml"
+      name: "The Verge AI"
+    - url: "https://news.ycombinator.com/rss"
+      name: "Hacker News"
+    - url: "https://www.wired.com/feed/tag/ai/latest/rss"
+      name: "Wired AI"
+    - url: "https://feeds.technologyreview.com/the_download.rss"
+      name: "MIT Tech Review"
+  max_items: 30
+  top_n: 8
+
+github:
+  max_repos: 10
+
+arxiv:
+  max_fetch: 50
+  top_n: 6
+
+producthunt:
+  max_fetch: 20
+  top_n: 6
+
+trends:
+  countries:        # 显示名: Google Trends geo 代码
+    美国: "US"
+    英国: "GB"
+    印度: "IN"
+    日本: "JP"
+    德国: "DE"
+  per_country: 10   # 每个市场取前 N 个热搜
+
+x:
+  accounts:
+    - "sama"           # Sam Altman (OpenAI)
+    - "elonmusk"       # Elon Musk
+    - "karpathy"       # Andrej Karpathy
+    - "ylecun"         # Yann LeCun (Meta AI)
+    - "demishassabis"  # Demis Hassabis (Google DeepMind)
+    - "AndrewYNg"      # Andrew Ng
+    - "GaryMarcus"     # Gary Marcus
+    - "emollick"       # Ethan Mollick
+    - "ilyasut"        # Ilya Sutskever
+    - "drfeifei"       # Fei-Fei Li
+    - "svpino"         # Santiago
+    - "goodfellow_ian" # Ian Goodfellow
+    - "milesbrundage"  # Miles Brundage (AI policy)
+    - "jackclarkSF"    # Jack Clark (Anthropic)
+    - "darioamodei"    # Dario Amodei (Anthropic)
+    - "gdb"            # Greg Brockman (OpenAI)
+    - "hardmaru"       # David Ha (Sakana AI)
+    - "bindureddy"     # Bindu Reddy (AI investor)
+    - "fchollet"       # François Chollet (Keras)
+    - "xuzhanghan"     # Zhang Han (researcher)
+  max_posts_per_account: 3
