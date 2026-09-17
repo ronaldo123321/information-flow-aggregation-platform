@@ -73,4 +73,4 @@ tibo:
   keywords: ["reset"]     # 帖子命中任一关键词才推送
   max_posts: 5            # 每次检查抓取的最近帖子数
   max_age_hours: 24       # 只推送该时间窗口内的新帖
-  interval_minutes: 10    # 检查间隔
+  # 检查时间在 main.py 调度：每天 8:00 / 14:00 / 20:00（北京时间）
