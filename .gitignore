@@ -30,3 +30,6 @@ reports/
 
 # GCS service account key
 gcs-key.json
+
+# Monitor runtime state
+state/

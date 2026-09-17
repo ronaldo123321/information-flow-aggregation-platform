@@ -26,6 +26,7 @@ report.py（汇总编排）
 - **08:00 日报**：单个源失败只影响自己的版块，不拖垮整份报告；GitHub/arXiv 非更新日在卡片中标注"本期未排期"。
 - **20:00 X 晚间增量**：只覆盖早报之后的新帖，无新帖则不打扰。
 - **周五 08:30 机会画布**：汇总本周每日摘要（`reports/digests/`），由 DeepSeek 提炼 2-3 个可落地的 POC 产品方向（信号依据 / 用户痛点 / 最小验证 / 判停指标），生成 `poc-latest.html` 并推送；情报不足 3 天自动跳过。
+- **Codex 重置监控**：每 10 分钟检查 Tibo（@thsottiaux）的 X 帖子，命中"reset"关键词的新帖立即推卡（附中文判定与原帖链接）；首次运行只记基线，去重状态存 `state/`。
 - **报告托管二选一**：配置 `GCS_BUCKET_NAME` 后报告自动上传到 GCS（公开读取），卡片按钮指向公网地址；未配置时由服务自带端口托管，`http://<host>:8080/reports/latest.html`（按日期归档，`/` 自动跳转最新一篇）。
 
 ## 快速开始
@@ -52,6 +53,7 @@ python -m report                # 生成并推送
 python -m sources.rss           # 单独跑某个源，打印提炼结果
 python evening_x.py             # 手动跑晚间 X 增量
 python -m weekly_poc            # 手动生成机会画布（--dry-run 不推送，--force 忽略最少天数）
+python -m tibo_monitor          # 手动检查一次 Codex 重置播报（--force 演示推送）
 ```
 
 服务启动后 `http://localhost:8080/health` 为健康检查，报告访问地址取决于部署环境：
@@ -64,6 +66,7 @@ python -m weekly_poc            # 手动生成机会画布（--dry-run 不推送
 | `DEEPSEEK_API_KEY` | DeepSeek API Key |
 | `LARK_DAILY_WEBHOOK` | 日报摘要卡片推送的群 Webhook（未填时回退旧变量名 `LARK_RSS_WEBHOOK`） |
 | `LARK_X_WEBHOOK` | X 晚间增量卡推送的群 Webhook |
+| `LARK_TIBO_WEBHOOK` | 可选：Codex 重置监控推送的群 Webhook（未填回落到 `LARK_X_WEBHOOK`） |
 | `GCS_BUCKET_NAME` | GCS bucket 名；配置后报告自动上传，卡片按钮指向 `https://storage.googleapis.com/<bucket>/latest.html` |
 | `GCS_PROJECT_ID` | GCP 项目 ID（如 `nebula-pro-438302`） |
 | `GCS_KEY_FILE` | 服务账号 key 文件路径（如 `/gcs-key.json`） |

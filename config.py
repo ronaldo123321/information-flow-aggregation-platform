@@ -16,6 +16,8 @@ def load_config():
     )
     # 晚间 X 增量卡单独一个 Webhook
     cfg["lark"]["x_webhook"] = os.environ.get("LARK_X_WEBHOOK", "")
+    # Codex 重置监控推送；未配置时回落到 X 观点的群
+    cfg["lark"]["tibo_webhook"] = os.environ.get("LARK_TIBO_WEBHOOK") or cfg["lark"]["x_webhook"]
     cfg["producthunt"]["token"] = os.environ.get("PRODUCTHUNT_TOKEN", "")
     # 报告对外访问地址：环境变量 > config.yaml > 本机默认
     cfg["report"]["base_url"] = (

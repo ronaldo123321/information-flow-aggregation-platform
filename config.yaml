@@ -67,3 +67,10 @@ x:
     - "fchollet"       # François Chollet (Keras)
     - "xuzhanghan"     # Zhang Han (researcher)
   max_posts_per_account: 3
+
+tibo:
+  account: "thsottiaux"   # Codex 重置播报员 Tibo
+  keywords: ["reset"]     # 帖子命中任一关键词才推送
+  max_posts: 5            # 每次检查抓取的最近帖子数
+  max_age_hours: 24       # 只推送该时间窗口内的新帖
+  interval_minutes: 10    # 检查间隔

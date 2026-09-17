@@ -39,7 +39,8 @@ def fetch_user_posts(account: str, max_posts: int, cutoff: datetime) -> list:
         for p in posts:
             if not p.get("text"):
                 continue
-            created = p.get("created_at", "")
+            # twitter-cli 的字段是 createdAtISO，兼容旧的 created_at
+            created = p.get("createdAtISO") or p.get("created_at", "")
             if created:
                 try:
                     pub_dt = datetime.fromisoformat(created.replace("Z", "+00:00"))
@@ -51,6 +52,8 @@ def fetch_user_posts(account: str, max_posts: int, cutoff: datetime) -> list:
                 "account": account,
                 "text": p.get("text", "").strip(),
                 "url": f"https://x.com/{account}/status/{p.get('id', '')}",
+                "id": str(p.get("id", "")),
+                "created_at": created,
             })
         return kept
     except Exception as e:
