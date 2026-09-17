@@ -27,3 +27,6 @@ logs/
 
 # Generated HTML reports
 reports/
+
+# GCS service account key
+gcs-key.json

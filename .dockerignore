@@ -13,3 +13,4 @@ logs
 .claude
 .DS_Store
 reports
+gcs-key.json
