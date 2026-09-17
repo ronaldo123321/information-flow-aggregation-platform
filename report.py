@@ -4,6 +4,7 @@
     python -m report --dry-run   # 生成 HTML 但不推送
     python -m report             # 生成并推送
 """
+import json
 import shutil
 import sys
 from datetime import datetime
@@ -38,6 +39,29 @@ def build_card(results: list, signals: str, not_due: list) -> str:
     return "\n".join(lines)
 
 
+def write_digest(results: list, signals: str):
+    """把当天结构化摘要存为 JSON，供周度机会画布（weekly_poc）汇总。"""
+    digest_dir = REPORTS_DIR / "digests"
+    digest_dir.mkdir(exist_ok=True)
+    payload = {
+        "date": datetime.now().strftime("%Y-%m-%d"),
+        "signals": signals,
+        "sources": [
+            {
+                "key": r["key"],
+                "name": r["name"],
+                "stat": r.get("stat", ""),
+                "digest": r.get("digest", ""),
+                "markdown": (r.get("markdown") or "")[:4000],
+            }
+            for r in results if r["ok"] and not r["empty"]
+        ],
+    }
+    path = digest_dir / f"{payload['date']}.json"
+    path.write_text(json.dumps(payload, ensure_ascii=False, indent=1), encoding="utf-8")
+    print(f"[report] 当日摘要已存档: {path}")
+
+
 def run(push: bool = True):
     due = due_sources()
     results = [run_source(m) for m in due]
@@ -57,6 +81,7 @@ def run(push: bool = True):
     dated = REPORTS_DIR / f"{datetime.now():%Y-%m-%d}.html"
     dated.write_text(html, encoding="utf-8")
     shutil.copyfile(dated, REPORTS_DIR / "latest.html")
+    write_digest(results, sig)
     print(f"[report] 报告已生成: {dated}")
 
     if not push:

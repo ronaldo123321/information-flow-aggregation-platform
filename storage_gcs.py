@@ -59,8 +59,8 @@ def _client():
     return storage.Client(project=project)
 
 
-def upload_reports(files: list[Path]) -> str:
-    """上传报告文件到所配 bucket，返回 latest.html 的公开 URL。未配置 bucket 返回空串。"""
+def upload_reports(files: list[Path], latest_name: str = "latest.html") -> str:
+    """上传报告文件到所配 bucket，返回 latest_name 对应的公开 URL。未配置 bucket 返回空串。"""
     bucket_name = cfg["report"].get("gcs_bucket", "")
     if not bucket_name:
         return ""
@@ -71,7 +71,7 @@ def upload_reports(files: list[Path]) -> str:
             str(f), content_type="text/html; charset=utf-8"
         )
         print(f"[gcs] 已上传 {f.name} -> gs://{bucket_name}/{f.name}")
-    return f"{GCS_PUBLIC_BASE}/{bucket_name}/latest.html"
+    return f"{GCS_PUBLIC_BASE}/{bucket_name}/{latest_name}"
 
 
 if __name__ == "__main__":
