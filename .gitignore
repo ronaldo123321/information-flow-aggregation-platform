@@ -24,3 +24,6 @@ logs/
 
 # OS files
 .DS_Store
+
+# Generated HTML reports
+reports/

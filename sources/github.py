@@ -1,10 +1,11 @@
-"""爬取 GitHub Trending 周榜，由 DeepSeek 筛选 AI 相关项目并介绍，推送飞书。"""
+"""信息源：GitHub Trending 周榜，DeepSeek 筛选 AI 相关项目。"""
 import requests
 from bs4 import BeautifulSoup
 from datetime import datetime, timezone, timedelta
 from config import cfg
 from ai_analyze import analyze
-from lark_push import push
+
+KEY, ICON, NAME = "github", "🐙", "GitHub 周榜"
 
 TRENDING_URL = "https://github.com/trending?since=weekly"
 THREE_YEARS_AGO = datetime.now(timezone.utc) - timedelta(days=365 * 3)
@@ -39,7 +40,7 @@ def fetch_trending() -> list:
             "name": full_name,
             "url": f"https://github.com/{full_name}",
             "description": description,
-            "week_stars": week_stars,
+            "week_stars": week_stars.replace(" stars this week", "").strip(),
             "language": lang,
         })
     return repos
@@ -50,20 +51,14 @@ def build_prompt(repos: list, top_n: int) -> str:
         f"{i+1}. **{r['name']}** ({r['week_stars']}, {r['language']})\n描述: {r['description']}\n链接: {r['url']}"
         for i, r in enumerate(repos)
     )
-    return f"""以下是 GitHub 本周 Star 增长榜全部 {len(repos)} 个项目。
+    return f"""以下是 GitHub 本周 Star 增长榜全部 {len(repos)} 个项目，请：
+1. 筛选出真正与 AI/ML/LLM/深度学习/NLP/CV 相关的项目，按本周新增 star 取前 {top_n} 个
+2. 对每个入选项目输出：
 
-任务：
-1. 从中筛选出真正与 AI/ML/LLM/深度学习/自然语言处理/计算机视觉 相关的项目，取本周新增 star 最多的前 {top_n} 个
-2. 对每个入选项目，用 2-3 句话介绍它是什么、解决什么问题、适合谁用，并给出一个具体使用场景
+**{{序号}}. [{{owner/repo}}]({{链接}})**（{{语言}} · 🔥 +{{本周新增star}})
+{{2 句介绍：是什么、解决什么问题，再给 1 个具体使用场景}}
 
-输出格式（严格按此，不输出其他内容）：
-
-## 🤖 GitHub AI 周榜 · {datetime.now().strftime('%Y 第%W周')}
-
-{{序号}}. **{{项目名}}** ({{语言}}) · 🔥{{本周新增star数}}
-📌 简介：{{2-3句介绍}}
-🎯 场景：{{一个具体使用场景}}
-🔗 {{github链接}}
+要求：只输出正文条目，不要大标题、分割线和总结语。
 
 ---
 
@@ -72,21 +67,22 @@ def build_prompt(repos: list, top_n: int) -> str:
 """
 
 
-def run():
+def collect() -> dict | None:
     top_n = cfg["github"]["max_repos"]
     repos = fetch_trending()
     if not repos:
-        print("[github] 未获取到数据，跳过推送")
-        return
-    print(f"[github] 抓取到 {len(repos)} 个项目，交由 AI 筛选 AI 相关前 {top_n} 个")
+        print("[github] 未获取到数据")
+        return None
+    print(f"[github] 抓取到 {len(repos)} 个项目，AI 筛选 AI 相关前 {top_n} 个")
     content = analyze(build_prompt(repos, top_n))
-    push(
-        cfg["lark"]["github_webhook"],
-        f"🤖 GitHub AI 周榜 · {datetime.now().strftime('%Y 第%W周')}",
-        content,
-    )
-    print(f"[github] 推送完成")
+    return {
+        "count": len(repos),
+        "stat": f"{top_n} 个项目",
+        "markdown": content,
+        "digest": " / ".join(f"{r['name']}(+{r['week_stars']})" for r in repos[:15]),
+    }
 
 
 if __name__ == "__main__":
-    run()
+    result = collect()
+    print(result["markdown"] if result else "（今日无数据）")

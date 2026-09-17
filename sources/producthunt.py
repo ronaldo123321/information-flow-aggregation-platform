@@ -1,9 +1,10 @@
-"""爬取 Product Hunt 每日 AI 产品榜，用 DeepSeek 介绍，推送飞书。"""
+"""信息源：Product Hunt 每日 AI 产品榜，DeepSeek 介绍亮点。"""
 import requests
-from datetime import datetime, date, timedelta
+from datetime import date, timedelta
 from config import cfg
 from ai_analyze import analyze
-from lark_push import push
+
+KEY, ICON, NAME = "producthunt", "🚀", "PH 新品"
 
 PH_API = "https://api.producthunt.com/v2/api/graphql"
 
@@ -56,19 +57,14 @@ def build_prompt(products: list, top_n: int) -> str:
         f"{i+1}. **{p['name']}** (👍{p['votes']})\n一句话: {p['tagline']}\n描述: {p['description']}\n链接: {p['url']}"
         for i, p in enumerate(products)
     )
-    return f"""以下是 Product Hunt 昨日 AI 产品榜单（共 {len(products)} 个），请：
-1. 筛选出最值得关注的前 {top_n} 个
-2. 对每个产品：介绍它解决什么问题、目标用户是谁、有什么亮点
+    return f"""以下是 Product Hunt 昨日 AI 产品榜单（共 {len(products)} 个），请挑选最值得关注的前 {top_n} 个，逐条输出：
 
-输出格式（严格按此）：
-
-## 🚀 AI 产品日报 · {datetime.now().strftime('%Y-%m-%d')}
-
-**{{序号}}. {{产品名}}** · 👍{{票数}}
+**{{序号}}. [{{产品名}}]({{链接}})** · 👍{{票数}}
 📌 定位：{{一句话说清楚是什么}}
 🎯 用户：{{目标用户群体}}
 ✨ 亮点：{{最值得关注的一个特性}}
-🔗 {{product hunt链接}}
+
+要求：只输出正文条目，不要大标题、分割线和总结语；产品链接用 [产品名](链接) 形式，不要输出裸链接。
 
 ---
 
@@ -77,22 +73,23 @@ def build_prompt(products: list, top_n: int) -> str:
 """
 
 
-def run():
+def collect() -> dict | None:
     top_n = cfg.get("producthunt", {}).get("top_n", 6)
     max_fetch = cfg.get("producthunt", {}).get("max_fetch", 20)
     products = fetch_products(max_fetch)
     if not products:
-        print("[producthunt] 未获取到产品，跳过推送")
-        return
+        print("[producthunt] 未获取到产品")
+        return None
     print(f"[producthunt] 抓取到 {len(products)} 个，AI 筛选前 {top_n} 个")
     content = analyze(build_prompt(products, top_n))
-    push(
-        cfg["lark"]["producthunt_webhook"],
-        f"🚀 AI 产品日报 · {datetime.now().strftime('%Y-%m-%d')}",
-        content,
-    )
-    print("[producthunt] 推送完成")
+    return {
+        "count": len(products),
+        "stat": f"{top_n} 个新品",
+        "markdown": content,
+        "digest": " / ".join(f"{p['name']}({p['votes']}票)" for p in products[:15]),
+    }
 
 
 if __name__ == "__main__":
-    run()
+    result = collect()
+    print(result["markdown"] if result else "（今日无数据）")

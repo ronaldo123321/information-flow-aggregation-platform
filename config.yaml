@@ -4,6 +4,11 @@ deepseek:
 
 lark: {}
 
+report:
+  base_url: ""     # 本地服务托管时的对外地址，如 http://1.2.3.4:8080；留空则读环境变量 REPORT_BASE_URL
+  gcs_bucket: ""   # GCS bucket 名（如 innvo-test）；配置后报告自动上传，卡片按钮指向公网地址
+  dir: "reports"   # HTML 报告本地输出目录
+
 rss:
   feeds:
     - url: "https://feeds.feedburner.com/TechCrunch/"

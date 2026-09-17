@@ -4,6 +4,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONPATH=/app
+ENV TZ=Asia/Shanghai
 ENV PATH="/app/.venv/bin:$PATH"
 
 RUN apt update && \

@@ -1,10 +1,10 @@
-"""抓取 Google Trends 各重点市场每日热搜（官方 RSS），由 DeepSeek 提炼（重点标注 AI 相关），推送飞书。"""
+"""信息源：Google Trends 各重点市场每日热搜（官方 RSS），DeepSeek 提炼出海机会。"""
 import requests
 import xml.etree.ElementTree as ET
-from datetime import datetime
 from config import cfg
 from ai_analyze import analyze
-from lark_push import push
+
+KEY, ICON, NAME = "trends", "🔥", "全球热搜"
 
 RSS_URL = "https://trends.google.com/trending/rss?geo={geo}"
 NS = {"ht": "https://trends.google.com/trending/rss"}
@@ -44,19 +44,13 @@ def build_prompt(data: dict) -> str:
         blocks.append("\n".join(lines))
     blocks_text = "\n\n".join(blocks)
     markets = "、".join(data.keys())
-    return f"""以下是今日 Google Trends 各重点市场的每日热搜关键词（含搜索量和相关新闻）。
+    return f"""以下是今日 Google Trends 各重点市场（{markets}）的每日热搜关键词（含搜索量和相关新闻）。
 
 任务：
-1. 汇总分析这些热搜，识别出跨市场共同出现的热点
-2. 重点标注其中与 AI / 科技 / 互联网产品 相关的趋势
-3. 对一个出海 AI 产品公司而言，指出哪些趋势值得关注、可能的机会点
-
-输出格式（严格按此）：
-
-## 🔥 Google Trends 全球热搜 · {datetime.now().strftime('%Y-%m-%d')}
+1. 识别跨市场共同出现的热点，重点标注与 AI / 科技 / 互联网产品相关的趋势
+2. 按以下结构输出：
 
 **🤖 AI / 科技相关热点**
-对每个相关热搜：
 - **{{关键词}}**（{{出现市场}}）：{{一句话解释为什么火 + 对出海产品的启发}}
 
 **🌍 其他值得关注的趋势**
@@ -65,8 +59,7 @@ def build_prompt(data: dict) -> str:
 **💡 出海启示**
 {{2-3 句话，总结今日热搜对 AI 出海产品的可参考机会}}
 
----
-📊 数据来源：[Google Trends Daily Search Trends](https://trends.google.com/trending) · 覆盖市场：{markets}
+要求：只输出以上三部分，不要大标题、分割线和总结语；没有 AI 相关热点时省略第一部分。
 
 ---
 
@@ -75,22 +68,27 @@ def build_prompt(data: dict) -> str:
 """
 
 
-def run():
+def collect() -> dict | None:
     tcfg = cfg.get("trends", {})
     countries = tcfg.get("countries", {"美国": "US"})
     per_country = tcfg.get("per_country", 10)
     data = fetch_trending(countries, per_country)
     if not data:
-        print("[trends] 未获取到任何热搜，跳过推送")
-        return
+        print("[trends] 未获取到任何热搜")
+        return None
+    total = sum(len(v) for v in data.values())
     content = analyze(build_prompt(data))
-    push(
-        cfg["lark"]["trends_webhook"],
-        f"🔥 Google Trends 全球热搜 · {datetime.now().strftime('%Y-%m-%d')}",
-        content,
-    )
-    print("[trends] 推送完成")
+    return {
+        "count": total,
+        "stat": f"{len(data)} 个市场",
+        "markdown": content,
+        "digest": "；".join(
+            f"{name}: {('、'.join(t for t, _, _ in items))[:120]}"
+            for name, items in data.items()
+        ),
+    }
 
 
 if __name__ == "__main__":
-    run()
+    result = collect()
+    print(result["markdown"] if result else "（今日无数据）")

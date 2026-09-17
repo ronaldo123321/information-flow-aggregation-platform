@@ -1,9 +1,10 @@
-"""爬取 RSS AI 新闻，用 DeepSeek 提炼用户痛点和行业价值，推送飞书。"""
+"""信息源：AI 行业 RSS 新闻，DeepSeek 精选并提炼行业价值。"""
 import feedparser
 from datetime import datetime, timezone, timedelta
 from config import cfg
 from ai_analyze import analyze
-from lark_push import push
+
+KEY, ICON, NAME = "rss", "📰", "行业新闻"
 
 
 def fetch_recent_entries(feeds: list, max_items: int) -> list:
@@ -13,7 +14,6 @@ def fetch_recent_entries(feeds: list, max_items: int) -> list:
     for feed in feeds:
         parsed = feedparser.parse(feed["url"])
         for e in parsed.entries:
-            # 获取发布时间
             published = e.get("published_parsed") or e.get("updated_parsed")
             if published:
                 pub_dt = datetime(*published[:6], tzinfo=timezone.utc)
@@ -34,25 +34,18 @@ def fetch_recent_entries(feeds: list, max_items: int) -> list:
     return entries[:max_items]
 
 
-def build_prompt(entries: list) -> str:
+def build_prompt(entries: list, top_n: int) -> str:
     items_text = "\n\n".join(
         f"{i+1}. [{e['source']}] {e['title']}\n摘要: {e['summary']}\n链接: {e['link']}"
         for i, e in enumerate(entries)
     )
-    return f"""以下是今日 AI 行业最新新闻（共 {len(entries)} 条），请：
-1. 筛选出最有价值的 {cfg['rss']['top_n']} 条
-2. 对每条：用一句话说明**行业价值**，再用一句话提炼**可能的用户痛点**
-3. 输出格式（严格按此，不要多余文字）：
+    return f"""以下是今日 AI 行业最新新闻（共 {len(entries)} 条），请挑选最有价值的 {top_n} 条，逐条输出：
 
-## 📰 AI 行业日报 · {datetime.now().strftime('%Y-%m-%d')}
+**{{序号}}. {{中文标题}}**
+{{2-3 句概述：发生了什么 + 对行业的价值/影响}}
+🔗 [阅读原文]({{link}})
 
-对每条新闻输出：
-**{'{序号}'}. {'{标题}'}**
-📄 概述：{'{2-3句话概述这条新闻的主要内容}'}
-🔍 行业价值：{'{一句话}'}
-💡 用户痛点：{'{一句话}'}
-🚀 机会洞察：{'{一句话，指出这条新闻背后潜在的产品/商业机会}'}
-🔗 来源：[{'{source}'}]({'{link}'})
+要求：只输出正文条目，不要大标题、分割线和总结语；标题译成中文，链接保持原样。
 
 ---
 
@@ -61,20 +54,23 @@ def build_prompt(entries: list) -> str:
 """
 
 
-def run():
+def collect() -> dict | None:
     rss_cfg = cfg["rss"]
     entries = fetch_recent_entries(rss_cfg["feeds"], rss_cfg["max_items"])
     if not entries:
-        print("[rss] 今日无新条目，跳过推送")
-        return
-    content = analyze(build_prompt(entries))
-    push(
-        cfg["lark"]["rss_webhook"],
-        f"📰 AI 行业日报 · {datetime.now().strftime('%Y-%m-%d')}",
-        content,
-    )
-    print(f"[rss] 推送完成，处理 {len(entries)} 条新闻")
+        print("[rss] 最近 24 小时无新条目")
+        return None
+    top_n = min(rss_cfg["top_n"], len(entries))
+    print(f"[rss] 抓取到 {len(entries)} 条新闻，AI 精选 {top_n} 条")
+    content = analyze(build_prompt(entries, top_n))
+    return {
+        "count": len(entries),
+        "stat": f"{top_n} 条精选",
+        "markdown": content,
+        "digest": " / ".join(e["title"][:60] for e in entries[:15]),
+    }
 
 
 if __name__ == "__main__":
-    run()
+    result = collect()
+    print(result["markdown"] if result else "（今日无数据）")
